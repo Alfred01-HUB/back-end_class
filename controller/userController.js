@@ -1,59 +1,55 @@
-
 //put this in your userController
 
 const UserModel = require("../Model/user");
-const sendEmail = require('../email');
+const sendEmail = require("../email");
 // const User = require('../Models/Users');
 
 exports.signup = async (req, res) => {
- 
   //destructure the request body
-const { email } = req.body;
-const { firstName } = req.body;
-//console.log(req.body)
-  
+  const { email, firstName } = req.body;
+  console.log("email", email);
+
   // check exsiting user
   const existingUser = await UserModel.findOne({ email: email });
 
   if (existingUser) {
 
-    //this is not a good approach. It makes the request infinite. Remind me to explain in the next class
-    // return new Error("Email already exist");
+  // this is not a good approach. It makes the request infinite. Remind me to explain in the next class
+ // return new Error("Email already exist");
 
-    //this is a better approach
-    return res.status(400).json({ 
-      message: "Email already exists" 
+  // this is a better approach
+    return res.status(400).json({
+      message: "Email already exists"
     });
   }
 
-  
-
+  let newUser;
   //create user if user does not exist
-  const newUser = await UserModel.create(req.body);
-
+  try {
+    newUser = await UserModel.create(req.body);
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({ error: err.message });
+  }
 
   res.status(201).json({
     message: "Signup successful.",
     user: newUser,
   });
- 
-await sendEmail(email, 'Welcome to My App!', 'welcome.html', { firstName });
 
+  await sendEmail(email, "Welcome to My App!", "welcome.html", { firstName });
 };
-
- 
 
 // add this to userController
 
 exports.login = async (req, res) => {
-
   const { email, password } = req.body;
 
   // 1) Check if email and password exist
   if (!email || !password) {
     // bad request
-    return res.status(400).json({ 
-      message: "Please provide email & password" 
+    return res.status(400).json({
+      message: "Please provide email & password",
     });
   }
 
@@ -61,15 +57,15 @@ exports.login = async (req, res) => {
   const user = await UserModel.findOne({ email }).select("+password");
 
   if (!user) {
-    return res.status(404).json({ 
-      message: "User not found" 
+    return res.status(404).json({
+      message: "User not found"
     });
   }
 
   if (!(await user.correctPassword(password, user.password))) {
     // unauthorized
-    return res.status(401).json({ 
-      message: "Incorrect email or password" 
+    return res.status(401).json({
+      message: "Incorrect email or password",
     });
   }
 
@@ -81,7 +77,6 @@ exports.login = async (req, res) => {
     },
   });
 };
-
 
 // controllers/userController.js
 //const User = require('../models/User'); // import your User model
